@@ -29,6 +29,11 @@ class_dict = {
 
 class FERPlusInferenceDataset(dataset.Dataset):
     def __init__(self, fer_data_dir, transforms=None):
+        """
+        Inferencer dataset
+        :param fer_data_dir: Path to images to inference (FER2013Test folder or own dataset!)
+        :param transforms: test transforms
+        """
         self.img_dir = fer_data_dir
         self.transforms = transforms
         self.image_file_names = sorted(
