@@ -17,19 +17,18 @@ import random
 from skimage import io, transform
 from sklearn.metrics import confusion_matrix
 
-# Paths for data, model and an experiment name
+# Paths for data, model, an experiment name etc
 DATA_ROOT = "/home/rex/data/FERPlus/images/"
 MODEL_DIR = "/home/rex/models/FERPlus/"
-exp_name = "exp9_pretrained_e35_lr001_224_cmat_4classes"
+exp_name = "exp9_pretrained_e35_lr001_224_cmat_8classes"
 MODEL_PATH = MODEL_DIR + exp_name
-
 LEARNING_RATE = 0.001
+NUM_EPOCHS = 35
+device = "cuda:0"  #cpu
 
 for _dir in [DATA_ROOT, MODEL_PATH]:
     if not os.path.exists(_dir):
         os.makedirs(_dir)
-
-device = "cuda:0"  #cpu
 
 
 def _process_row(row):
@@ -285,9 +284,12 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
 model = vgg13(pretrained=True)
 num_ftrs = model.classifier[3].out_features
 
-model.classifier = nn.Sequential(nn.Linear(7 * 7 * 512, 1024), nn.ReLU(),
-                                 nn.Dropout(0.25), nn.Linear(1024, 1024),
-                                 nn.ReLU(), nn.Dropout(0.25),
+model.classifier = nn.Sequential(nn.Linear(7 * 7 * 512, 1024),
+                                 nn.ReLU(),
+                                 nn.Dropout(0.25),
+                                 nn.Linear(1024, 1024),
+                                 nn.ReLU(),
+                                 nn.Dropout(0.25),
                                  nn.Linear(1024, 8))
 
 for param in model.features.parameters():
@@ -295,7 +297,7 @@ for param in model.features.parameters():
 
 model = model.to(device)
 
-#Loss weights created from an analysis of the distribution
+# Loss weights created from an analysis of the distribution
 loss_weights = torch.tensor([
     0.01637922728586569, 0.022555393392596525, 0.047446274072006696,
     0.04776622646810901, 0.06865912762520193, 0.25796661608497723,
@@ -308,14 +310,14 @@ criterion = nn.CrossEntropyLoss(weight=loss_weights)
 # # Observe that all parameters are being optimized
 optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
-# # Decay LR by a factor of 0.1 every 7 epochs
+# # Decay LR by a factor of 0.1 every 20 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
 model = train_model(model,
                     criterion,
                     optimizer,
                     exp_lr_scheduler,
-                    num_epochs=35)
+                    num_epochs=NUM_EPOCHS)
 
 # Save model
 torch.save(model, os.path.join(MODEL_PATH, "model.pth"))
